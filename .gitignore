@@ -15,6 +15,7 @@ ENV/
 env/
 .env
 .env.*
+!.env.example
 
 # Build, distribution, and packaging
 build/
