@@ -12,14 +12,16 @@ from typing import Optional
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="API Login con Roles")
-
-# CORS configurable por variables de entorno
-origins_env = os.getenv("CORS_ORIGINS", "")
-if origins_env:
-    origins = [o.strip().rstrip("/") for o in origins_env.split(",") if o.strip()]
+env_value = os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("ENV") or os.getenv("ENVIRONMENT")
+is_prod = str(env_value).lower() in {"prod", "production"}
+app = FastAPI(title="API Login con Roles", docs_url=None if is_prod else "/docs", redoc_url=None if is_prod else "/redoc")
+if is_prod:
+    origins_env = os.getenv("CORS_ORIGINS", "")
+    if origins_env:
+        origins = [o.strip().rstrip("/") for o in origins_env.split(",") if o.strip()]
+    else:
+        origins = ["https://lexiarailway-production.up.railway.app"]
 else:
-    # Valores por defecto para desarrollo (Expo Web y LAN)
     origins = [
         "http://localhost:8081",
         "http://127.0.0.1:8081",

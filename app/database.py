@@ -22,6 +22,10 @@ def _normalize_mysql_url(url: str) -> str:
 # Prioridad 1: usar DATABASE_URL si está definido (ideal para despliegues como Railway)
 DATABASE_URL = os.getenv("DATABASE_URL")
 ALLOW_DB_CREATE = os.getenv("ALLOW_DB_CREATE", "true").lower() == "true"
+# Desactivar creación automática de BD en producción
+env_value = os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("ENV") or os.getenv("ENVIRONMENT")
+if str(env_value).lower() in {"prod", "production"}:
+    ALLOW_DB_CREATE = False
 
 if DATABASE_URL:
     DATABASE_URL = _normalize_mysql_url(DATABASE_URL)
