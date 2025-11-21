@@ -8,7 +8,7 @@ from .security import create_access_token, verify_password
 from .deps import get_current_user, get_current_admin
 import os
 from fastapi.middleware.cors import CORSMiddleware
-from typing import Optional
+from typing import Optional, List
 
 Base.metadata.create_all(bind=engine)
 
@@ -58,7 +58,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 def read_me(current_user: models.User = Depends(get_current_user)):
     return current_user
 
-@app.get("/admin/users", response_model=list[schemas.UserOut])
+@app.get("/admin/users", response_model=List[schemas.UserOut])
 def admin_list_users(
     q: Optional[str] = None,
     full_name: Optional[str] = None,

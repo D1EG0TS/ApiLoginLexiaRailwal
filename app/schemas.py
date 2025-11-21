@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr, Field
-from typing import Literal, Optional
+from typing import Literal, Optional, List
 from .models import UserRole
 from datetime import datetime
 
@@ -36,5 +36,5 @@ class Token(BaseModel):
 
 # Respuesta paginada para listado con total
 class UsersPaged(BaseModel):
-    items: list[UserOut]
+    items: List[UserOut]
     total: int
