@@ -14,7 +14,12 @@ Base.metadata.create_all(bind=engine)
 
 env_value = os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("ENV") or os.getenv("ENVIRONMENT")
 is_prod = str(env_value).lower() in {"prod", "production"}
-app = FastAPI(title="API Login con Roles", docs_url=None if is_prod else "/docs", redoc_url=None if is_prod else "/redoc")
+enable_docs = os.getenv("ENABLE_DOCS", "false").lower() == "true"
+app = FastAPI(
+    title="API Login con Roles",
+    docs_url="/docs" if (not is_prod or enable_docs) else None,
+    redoc_url="/redoc" if (not is_prod or enable_docs) else None,
+)
 if is_prod:
     origins_env = os.getenv("CORS_ORIGINS", "")
     if origins_env:
@@ -35,6 +40,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.get("/", tags=["meta"])
+def root():
+    return {
+        "status": "ok",
+        "service": "API Login con Roles",
+        "docs": "/docs" if (not is_prod or enable_docs) else None,
+    }
+
+@app.get("/health", tags=["meta"])
+def health():
+    return {"status": "ok"}
 
 @app.post("/auth/register", response_model=schemas.UserOut)
 def register(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
