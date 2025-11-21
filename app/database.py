@@ -28,6 +28,7 @@ if DATABASE_URL:
         DATABASE_URL,
         pool_pre_ping=True,
         future=True,
+        connect_args={"ssl": {}},
     )
 else:
     # Prioridad 2: URLs directas de Railway (interno y público)
@@ -40,6 +41,7 @@ else:
             DATABASE_URL,
             pool_pre_ping=True,
             future=True,
+            connect_args={"ssl": {}},
         )
     else:
         # Prioridad 3: variables estándar con prefijo DB_ requeridas por el entorno
@@ -56,6 +58,7 @@ else:
                 DATABASE_URL,
                 pool_pre_ping=True,
                 future=True,
+                connect_args={"ssl": {}},
             )
         elif DB_HOST and DB_USER and DB_NAME:
             DATABASE_URL = (
@@ -65,6 +68,7 @@ else:
                 DATABASE_URL,
                 pool_pre_ping=True,
                 future=True,
+                connect_args={"ssl": {}},
             )
         else:
             MYSQLHOST = os.getenv("MYSQLHOST") or os.getenv("MYSQL_HOST")
@@ -86,6 +90,7 @@ else:
                     DATABASE_URL,
                     pool_pre_ping=True,
                     future=True,
+                    connect_args={"ssl": {}},
                 )
             else:
                 raise RuntimeError("Falta configuración de base de datos: define 'DATABASE_URL', 'MYSQL_URL'/'MYSQL_PUBLIC_URL', variables DB_* o variables MYSQL_*")
