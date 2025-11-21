@@ -1,5 +1,5 @@
 import os
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from dotenv import load_dotenv
 
@@ -21,11 +21,6 @@ def _normalize_mysql_url(url: str) -> str:
 
 # Prioridad 1: usar DATABASE_URL si está definido (ideal para despliegues como Railway)
 DATABASE_URL = os.getenv("DATABASE_URL")
-ALLOW_DB_CREATE = os.getenv("ALLOW_DB_CREATE", "true").lower() == "true"
-# Desactivar creación automática de BD en producción
-env_value = os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("ENV") or os.getenv("ENVIRONMENT")
-if str(env_value).lower() in {"prod", "production"}:
-    ALLOW_DB_CREATE = False
 
 if DATABASE_URL:
     DATABASE_URL = _normalize_mysql_url(DATABASE_URL)
@@ -47,22 +42,24 @@ else:
             future=True,
         )
     else:
-        # Prioridad 3: variables estándar de MySQL (con y sin guión bajo)
-        MYSQLHOST = os.getenv("MYSQLHOST") or os.getenv("MYSQL_HOST")
-        MYSQLPORT = os.getenv("MYSQLPORT") or os.getenv("MYSQL_PORT") or "3306"
-        MYSQLUSER = os.getenv("MYSQLUSER") or os.getenv("MYSQL_USER")
-        # Permite usar MYSQLPASSWORD, MYSQL_PASSWORD o MYSQL_ROOT_PASSWORD
-        MYSQLPASSWORD = (
-            os.getenv("MYSQLPASSWORD")
-            or os.getenv("MYSQL_PASSWORD")
-            or os.getenv("MYSQL_ROOT_PASSWORD")
-            or ""
-        )
-        MYSQLDATABASE = os.getenv("MYSQLDATABASE") or os.getenv("MYSQL_DATABASE")
+        # Prioridad 3: variables estándar con prefijo DB_ requeridas por el entorno
+        DB_HOST = os.getenv("DB_HOST")
+        DB_PORT = os.getenv("DB_PORT", "3306")
+        DB_USER = os.getenv("DB_USER")
+        DB_PASS = os.getenv("DB_PASS", "")
+        DB_NAME = os.getenv("DB_NAME")
 
-        if MYSQLHOST and MYSQLUSER and MYSQLDATABASE:
+        # Si DB_HOST contiene una URL completa, úsala directamente
+        if DB_HOST and (DB_HOST.startswith("mysql://") or DB_HOST.startswith("mysql+pymysql://")):
+            DATABASE_URL = _normalize_mysql_url(DB_HOST)
+            engine = create_engine(
+                DATABASE_URL,
+                pool_pre_ping=True,
+                future=True,
+            )
+        elif DB_HOST and DB_USER and DB_NAME:
             DATABASE_URL = (
-                f"mysql+pymysql://{MYSQLUSER}:{MYSQLPASSWORD}@{MYSQLHOST}:{MYSQLPORT}/{MYSQLDATABASE}?charset=utf8mb4"
+                f"mysql+pymysql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}?charset=utf8mb4"
             )
             engine = create_engine(
                 DATABASE_URL,
@@ -70,34 +67,28 @@ else:
                 future=True,
             )
         else:
-            # Prioridad 4: entorno local (XAMPP) con creación opcional de base de datos
-            DB_HOST = os.getenv("DB_HOST", "127.0.0.1")
-            DB_PORT = os.getenv("DB_PORT", "3306")
-            DB_USER = os.getenv("DB_USER", "root")  # por defecto en XAMPP
-            DB_PASS = os.getenv("DB_PASS", "")       # vacío por defecto en XAMPP
-            DB_NAME = os.getenv("DB_NAME", "login_api")
+            MYSQLHOST = os.getenv("MYSQLHOST") or os.getenv("MYSQL_HOST")
+            MYSQLPORT = os.getenv("MYSQLPORT") or os.getenv("MYSQL_PORT") or "3306"
+            MYSQLUSER = os.getenv("MYSQLUSER") or os.getenv("MYSQL_USER")
+            MYSQLPASSWORD = (
+                os.getenv("MYSQLPASSWORD")
+                or os.getenv("MYSQL_PASSWORD")
+                or os.getenv("MYSQL_ROOT_PASSWORD")
+                or ""
+            )
+            MYSQLDATABASE = os.getenv("MYSQLDATABASE") or os.getenv("MYSQL_DATABASE")
 
-            # Crear base de datos solo si está permitido (evitar en producción como Railway)
-            if ALLOW_DB_CREATE:
-                SERVER_DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/?charset=utf8mb4"
-                server_engine = create_engine(
-                    SERVER_DATABASE_URL,
+            if MYSQLHOST and MYSQLUSER and MYSQLDATABASE:
+                DATABASE_URL = (
+                    f"mysql+pymysql://{MYSQLUSER}:{MYSQLPASSWORD}@{MYSQLHOST}:{MYSQLPORT}/{MYSQLDATABASE}?charset=utf8mb4"
+                )
+                engine = create_engine(
+                    DATABASE_URL,
                     pool_pre_ping=True,
                     future=True,
                 )
-                with server_engine.connect() as conn:
-                    conn.execute(text(
-                        f"CREATE DATABASE IF NOT EXISTS `{DB_NAME}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
-                    ))
-                    conn.commit()
-
-            # Conectar a la base ya existente
-            DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}?charset=utf8mb4"
-            engine = create_engine(
-                DATABASE_URL,
-                pool_pre_ping=True,
-                future=True,
-            )
+            else:
+                raise RuntimeError("Falta configuración de base de datos: define 'DATABASE_URL', 'MYSQL_URL'/'MYSQL_PUBLIC_URL', variables DB_* o variables MYSQL_*")
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, future=True)
 
