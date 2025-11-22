@@ -16,11 +16,10 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60")
 
 
 def verify_password(plain_password: str, password_hash: str) -> bool:
-    try:
-        return pwd_context.verify(plain_password, password_hash)
-    except Exception:
-        digest = hashlib.sha256(plain_password.encode("utf-8")).hexdigest()
-        return pwd_context.verify(digest, password_hash)
+    if pwd_context.verify(plain_password, password_hash):
+        return True
+    digest = hashlib.sha256(plain_password.encode("utf-8")).hexdigest()
+    return pwd_context.verify(digest, password_hash)
 
 
 def get_password_hash(password: str) -> str:
