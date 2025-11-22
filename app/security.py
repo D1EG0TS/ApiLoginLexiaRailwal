@@ -19,7 +19,7 @@ def verify_password(plain_password: str, password_hash: str) -> bool:
 
 
 def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
+    return pwd_context.hash(password, scheme="bcrypt_sha256")
 
 
 def create_access_token(subject: str, expires_delta: Optional[timedelta] = None) -> str:
