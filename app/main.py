@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from .database import engine, Base, get_db
 from . import models, schemas, crud
 from .security import create_access_token, verify_password
+from . import security
 from .deps import get_current_user, get_current_admin
 import os
 from fastapi.middleware.cors import CORSMiddleware
@@ -27,7 +28,7 @@ logger = logging.getLogger("uvicorn")
 def _log_routes():
     try:
         paths = [getattr(r, "path", None) for r in app.routes]
-        logger.info({"routes": paths})
+        logger.info({"routes": paths, "pwd_scheme": getattr(security.pwd_context, "default_scheme", lambda: None)()})
     except Exception:
         pass
 if is_prod:
