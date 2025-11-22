@@ -5,6 +5,7 @@ from jose import jwt, JWTError
 import hashlib
 from passlib.context import CryptContext
 from dotenv import load_dotenv
+from passlib.exc import UnknownHashError
 
 load_dotenv()
 
@@ -16,10 +17,14 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60")
 
 
 def verify_password(plain_password: str, password_hash: str) -> bool:
-    if pwd_context.verify(plain_password, password_hash):
-        return True
-    digest = hashlib.sha256(plain_password.encode("utf-8")).hexdigest()
-    return pwd_context.verify(digest, password_hash)
+    try:
+        if pwd_context.verify(plain_password, password_hash):
+            return True
+        digest = hashlib.sha256(plain_password.encode("utf-8")).hexdigest()
+        return pwd_context.verify(digest, password_hash)
+    except UnknownHashError:
+        digest = hashlib.sha256(plain_password.encode("utf-8")).hexdigest()
+        return password_hash == plain_password or password_hash == digest
 
 
 def get_password_hash(password: str) -> str:
