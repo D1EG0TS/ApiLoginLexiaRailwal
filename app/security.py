@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["bcrypt_sha256"], deprecated="auto")
 
 JWT_SECRET = os.getenv("JWT_SECRET", "s0kJRdDTHZ8kAunpn6OpBQIcxMlitrMOgJtVJkMP7ogc3kLU1bfqT_L_uKvnHyI6gHkIyFHwvlJKKNBa9cYC1w")
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")

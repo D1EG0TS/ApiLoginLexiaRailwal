@@ -74,7 +74,10 @@ def register(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
     if existing:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El correo ya está registrado")
     role = models.UserRole(user_in.role)
-    user = crud.create_user(db, email=user_in.email, full_name=user_in.full_name, password=user_in.password, role=role)
+    try:
+        user = crud.create_user(db, email=user_in.email, full_name=user_in.full_name, password=user_in.password, role=role)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     return user
 
 @app.post("/auth/login", response_model=schemas.Token)
