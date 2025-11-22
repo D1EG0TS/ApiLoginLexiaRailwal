@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
@@ -9,6 +9,7 @@ from .deps import get_current_user, get_current_admin
 import os
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional, List
+import logging
 
 Base.metadata.create_all(bind=engine)
 
@@ -20,6 +21,15 @@ app = FastAPI(
     docs_url="/docs" if (not is_prod or enable_docs) else None,
     redoc_url="/redoc" if (not is_prod or enable_docs) else None,
 )
+logger = logging.getLogger("uvicorn")
+
+@app.on_event("startup")
+def _log_routes():
+    try:
+        paths = [getattr(r, "path", None) for r in app.routes]
+        logger.info({"routes": paths})
+    except Exception:
+        pass
 if is_prod:
     origins_env = os.getenv("CORS_ORIGINS", "")
     if origins_env:
@@ -52,6 +62,10 @@ def root():
 @app.get("/health", tags=["meta"])
 def health():
     return {"status": "ok"}
+
+@app.get("/favicon.ico")
+def favicon():
+    return Response(status_code=204)
 
 @app.post("/auth/register", response_model=schemas.UserOut)
 def register(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
